@@ -2,6 +2,8 @@
 
 This examples assumes OpenShift Online 3 is used. 
 
+Manifests in `manifests` directory are here only for reference. Deployment can be rolled out using `openam-template.yaml` Template. 
+
 
 ### Requirements
 * OpenShift Online account

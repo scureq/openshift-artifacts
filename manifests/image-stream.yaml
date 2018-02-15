@@ -4,4 +4,4 @@ metadata:
   name: openam-eval
   namespace: am-dev
 spec:
-  dockerImageRepository: "docker.io/steffow/openam-eval"
+  dockerImageRepository: "docker.io/[YOUR_DOCKER_ID]/[YOUR_DOCKER_REPO]"
