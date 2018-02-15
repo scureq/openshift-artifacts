@@ -51,6 +51,8 @@ It should have syntax similar to that:
 }
 ```
 
+config.json might use `credsStore` like `osxkeychain` in Mac OS X. In this case you can either disable "Securely store docker logins in macOS keychain" temporarily and reenable it right after performing the step below. You can also create that file using the above as template and substituting value of `auth` key with Base64 encoded `dockerid:password` string. 
+
 You need to Base64 encode the entire file:
 ```sh
 cat ~/.docker/config.json | base64
@@ -60,7 +62,7 @@ This would give Base64 encoded output similar to this:
 `ewogICJhdXRocyIgOiB7CiAgICAiaHR0cHM6Ly9pbmRleC5kb2NrZXIuaW8vdjEvIiA6IHsKICAgICAgImF1dGgiIDogInNkZmx3a2VyamwyazNqNGwyazM0VSIKICAgIH0KICB9Cn0K`
 
 Use that string `DOCKER_CREDS` parameter in the following points. 
-You can also export it as ENV variable to make life easier
+You can also export it as ENV variable to make life easier. DO NOT forget to clean up as this exposes your Docker credentials.
 
 ```sh
 $ export DOCKER_CREDS=`cat ~/.docker/config.json | base64`
