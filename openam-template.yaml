@@ -63,6 +63,8 @@ objects:
             - env:
                 - name: HOME
                   value: /usr/local/tomcat
+                - name: JAVA_OPTS
+                  value: -Xms2g -Xmx2g -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m -Dorg.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH=true
               image:
                 ${DEPLOYMENT}
               imagePullPolicy: IfNotPresent
