@@ -5,7 +5,7 @@ This examples assumes OpenShift Online 3 is used.
 
 ### Requirements
 * OpenShift Online account
-* OpenShift command line client (from RedHat) installed called "oc". Use the latest version. You can get it from [OpenShift GitHub](https://github.com/openshift/origin/releases). 
+* OpenShift command line client (from RedHat) installed called "oc". Use the latest version. You can get it from [OpenShift GitHub](https://github.com/openshift/origin/releases).
 
 
 ### How to run
@@ -36,12 +36,44 @@ MEMORY_LIMIT        Maximum amount of memory container can consume              
 STORAGE             Persistant Volume Claim size                                                           2Gi
 ```
 
-##### Run using parameters
+##### If you use private Docker image repo read this
+
+You need to have access to Docker config file ie. `.dockerconfig` or `config.json` depending on the version.
+It should have syntax similar to that:
+
+```json
+{
+  "auths" : {
+    "https://index.docker.io/v1/" : {
+      "auth" : "sdflwkerjl2k3j4l2k34U"
+    }
+  }
+}
+```
+
+You need to Base64 encode the entire file:
 ```sh
-$ oc process -f openam-template.yaml -p DEPLOYMENT=demo -p IMAGEREPO=docker.io/mydockerid/myrepo | oc create -f -
+cat ~/.docker/config.json | base64
+```
+
+This would give Base64 encoded output similar to this:
+`ewogICJhdXRocyIgOiB7CiAgICAiaHR0cHM6Ly9pbmRleC5kb2NrZXIuaW8vdjEvIiA6IHsKICAgICAgImF1dGgiIDogInNkZmx3a2VyamwyazNqNGwyazM0VSIKICAgIH0KICB9Cn0K`
+
+Use that string `DOCKER_CREDS` parameter in the following points. 
+You can also export it as ENV variable to make life easier
+
+```sh
+$ export DOCKER_CREDS=`cat ~/.docker/config.json | base64`
+```
+
+##### Run using parameters
+
+```sh
+$ oc process -f openam-template.yaml -p DEPLOYMENT=demo -p DOCKER_CREDS=$DOCKER_CREDS -p IMAGEREPO=docker.io/mydockerid/openam-eval | oc create -f -
 ```
 
 ##### Check deployment status
+
 ```sh
 $ oc get all
 ```

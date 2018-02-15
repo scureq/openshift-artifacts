@@ -22,7 +22,7 @@ objects:
     apiVersion: v1
     data:
       .dockerconfigjson: >-
-        ewoJImF1dGhzIjogewoJCSJodHRwczovL2luZGV4LmRvY2tlci5pby92MS8iOiB7CgkJCSJhdXRoIjogImMyTjFjbVZ4T2tVc2RpbG1SRzkzZWprMlozcFUiCgkJfQoJfQp9Cg==
+        ${DOCKER_CREDS}
     metadata:
       name: private-docker
     type: kubernetes.io/dockerconfigjson
@@ -151,5 +151,7 @@ parameters:
   - name: STORAGE
     description: Persistant Volume Claim size
     value: 2Gi
+  - name: DOCKER_CREDS
+    description: Docker registry Based64 encoded configfile.
 labels:
   template: openam-eval
