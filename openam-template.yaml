@@ -1,0 +1,144 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: openam-template
+  annotations:
+    description: >-
+      Sample OpenAM deployment template. 
+    iconClass: "icon-sso"
+    tags: "openam"
+objects:
+  - kind: PersistentVolumeClaim
+    apiVersion: v1
+    metadata:
+      name: "${DEPLOYMENT}"
+    spec:
+      accessModes:
+        - "ReadWriteOnce"
+      resources:
+        requests:
+          storage: "2Gi"
+  - kind: Secret
+    apiVersion: v1
+    data:
+      .dockerconfigjson: >-
+        ewoJImF1dGhzIjogewoJCSJodHRwczovL2luZGV4LmRvY2tlci5pby92MS8iOiB7CgkJCSJhdXRoIjogImMyTjFjbVZ4T2tVc2RpbG1SRzkzZWprMlozcFUiCgkJfQoJfQp9Cg==
+    metadata:
+      name: private-docker
+    type: kubernetes.io/dockerconfigjson
+  - kind: ImageStream
+    apiVersion: v1
+    metadata:
+      name: ${DEPLOYMENT}
+    spec:
+      dockerImageRepository: ${IMAGEREPO}
+  - kind: DeploymentConfig
+    apiVersion: apps.openshift.io/v1
+    metadata:
+      labels:
+        app: ${DEPLOYMENT}
+      name: ${DEPLOYMENT}
+    spec:
+      replicas: 1
+      selector:
+        app: ${DEPLOYMENT}
+        deploymentconfig: ${DEPLOYMENT}
+      strategy:
+        activeDeadlineSeconds: 21600
+        resources: {}
+        rollingParams:
+          intervalSeconds: 1
+          maxSurge: 25%
+          maxUnavailable: 25%
+          timeoutSeconds: 600
+          updatePeriodSeconds: 1
+        type: Rolling
+      template:
+        metadata:
+          labels:
+            app: ${DEPLOYMENT}
+            deploymentconfig: ${DEPLOYMENT}
+        spec:
+          containers:
+            - env:
+                - name: HOME
+                  value: /usr/local/tomcat
+              image:
+                ${DEPLOYMENT}
+              imagePullPolicy: IfNotPresent
+              name: ${DEPLOYMENT}
+              ports:
+                - containerPort: 8080
+                  protocol: TCP
+              resources:
+                limits:
+                  memory: 2Gi
+                requests:
+                  memory: 2Gi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /usr/local/tomcat/openam-configuration
+                  name: volume-openam
+          imagePullSecrets:
+            - name: private-docker
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - name: volume-openam
+              persistentVolumeClaim:
+                claimName: ${DEPLOYMENT}
+      test: false
+      triggers:
+         - type: ImageChange
+           imageChangeParams:
+             automatic: true
+             containerNames:
+                - ${DEPLOYMENT}
+             from:
+                kind: ImageStreamTag
+                name: ${DEPLOYMENT}:latest
+         - type: ConfigChange
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      labels:
+        app: ${DEPLOYMENT}
+      name: ${DEPLOYMENT}
+    spec:
+      ports:
+        - name: 8080-tcp
+          port: 8080
+          protocol: TCP
+          targetPort: 8080
+      selector:
+        deploymentconfig: ${DEPLOYMENT}
+      sessionAffinity: None
+      type: ClusterIP
+  - kind: Route
+    apiVersion: v1
+    metadata:
+      labels:
+        app: ${DEPLOYMENT}
+      name: ${DEPLOYMENT}
+    spec:
+      path: /openam
+      port:
+        targetPort: 8080-tcp
+      to:
+        kind: Service
+        name: ${DEPLOYMENT}
+        weight: 100
+      wildcardPolicy: None
+parameters:
+  - name: DEPLOYMENT
+    description: Deployment name
+    value: openam
+  - name: IMAGEREPO
+    description: Pointer to Docker Image repository eg. docker.io/user/repository
+    required: true
+labels:
+  template: openam-eval
