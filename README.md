@@ -10,7 +10,7 @@ This examples assumes OpenShift Online 3 is used.
 
 ### How to run
 
-/ Login to OpenShift
+##### Login to OpenShift
 
 ##### Create OpenShift Project
 For example `am-playground`
