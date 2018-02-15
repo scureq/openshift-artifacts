@@ -64,7 +64,7 @@ objects:
                 - name: HOME
                   value: /usr/local/tomcat
                 - name: JAVA_OPTS
-                  value: -Xms2g -Xmx2g -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m -Dorg.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH=true
+                  value: -Xms${XMS_SIZE} -Xmx${XMX_SIZE} -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m -Dorg.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH=true
               image:
                 ${DEPLOYMENT}
               imagePullPolicy: IfNotPresent
@@ -153,5 +153,9 @@ parameters:
     value: 2Gi
   - name: DOCKER_CREDS
     description: Docker registry Based64 encoded configfile.
+  - name: XMX_SIZE
+    description: Maximum JAVA heap size when starting ForgeRock AM 
+  - name: XMS_SIZE
+    description: Initial JAVA heap size when starting ForgeRock AM 
 labels:
   template: openam-eval
