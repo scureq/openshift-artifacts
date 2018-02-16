@@ -33,8 +33,6 @@ Values in `Values` column are default when parameter is not specified. In our ex
 NAME                DESCRIPTION                                                        GENERATOR           VALUE
 DEPLOYMENT          Deployment name                                                                        openam
 IMAGEREPO           Pointer to Docker Image repository eg. docker.io/user/repository
-MEMORY_INIT         Initial memory allocated to containers                                                 2Gi
-MEMORY_LIMIT        Maximum amount of memory container can consume                                         2Gi
 STORAGE             Persistant Volume Claim size                                                           2Gi
 ```
 
