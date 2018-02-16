@@ -1,4 +1,4 @@
-# ForgeRock on OpenShift
+# ForgeRock Access Management on OpenShift
 
 This examples assumes OpenShift Online 3 is used. 
 
