@@ -60,8 +60,7 @@ objects:
             deploymentconfig: ${DEPLOYMENT}
         spec:
           containers:
-            image:
-                ${DEPLOYMENT}
+          - image: ${DEPLOYMENT}
             imagePullPolicy: IfNotPresent
             name: ${DEPLOYMENT}
             ports:
@@ -72,11 +71,11 @@ objects:
                 memory: ${MEMORY_LIMIT}
               requests:
                 memory: ${MEMORY_INIT}
-              terminationMessagePath: /dev/termination-log
-              terminationMessagePolicy: File
-              volumeMounts:
-                - mountPath: /usr/local/tomcat/openam-configuration
-                  name: volume-openam      
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+            volumeMounts:
+              - mountPath: /usr/local/tomcat/openam-configuration
+                name: volume-openam
           imagePullSecrets:
             - name: private-docker
           dnsPolicy: ClusterFirst
