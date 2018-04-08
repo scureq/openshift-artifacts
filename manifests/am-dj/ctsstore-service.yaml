@@ -1,0 +1,34 @@
+{
+  "kind": "Service",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "ctsstore",
+    "labels": {
+      "app": "ctsstore",
+      "component": "opendj",
+      "vendor": "forgerock"
+    }
+  },
+  "spec": {
+    "ports": [
+      {
+        "name": "ldap",
+        "protocol": "TCP",
+        "port": 1389,
+        "targetPort": 1389
+      },
+      {
+        "name": "djadmin",
+        "protocol": "TCP",
+        "port": 4444,
+        "targetPort": 4444
+      }
+    ],
+    "selector": {
+      "djInstance": "ctsstore"
+    },
+    "clusterIP": "None",
+    "type": "ClusterIP",
+    "sessionAffinity": "None"
+  }
+}

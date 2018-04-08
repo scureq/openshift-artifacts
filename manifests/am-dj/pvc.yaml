@@ -1,0 +1,25 @@
+{
+  "kind": "PersistentVolumeClaim",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "dj",
+    "labels": {
+      "component": "opendj",
+      "djInstance": "ds",
+      "vendor": "forgerock"
+    },
+    "annotations": {
+      "pv.beta.kubernetes.io/gid": "11111",
+    }
+  },
+  "spec": {
+    "accessModes": [
+      "ReadWriteOnce"
+    ],
+    "resources": {
+      "requests": {
+        "storage": "2Gi"
+      }
+    }
+  }
+}
