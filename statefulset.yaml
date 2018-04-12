@@ -1,0 +1,124 @@
+    kind: StatefulSet
+    apiVersion: apps/v1beta1
+    metadata:
+      # labels:
+      #   app: opendj
+      name: opendj
+    spec:
+  #new
+      serviceName: opendj
+  #
+      replicas: 1
+      # selector:
+      #   app: opendj
+      #   deploymentconfig: opendj
+      strategy:
+        activeDeadlineSeconds: 21600
+        resources: {}
+        rollingParams:
+          intervalSeconds: 1
+          maxSurge: 25%
+          maxUnavailable: 25%
+          timeoutSeconds: 600
+          updatePeriodSeconds: 1
+        type: Rolling
+      template:
+        metadata:
+          labels:
+            app: opendj
+            deploymentconfig: opendj
+        spec:
+          containers:
+          #- image: opendj
+          - image: docker.io/scureq/opendj
+            imagePullPolicy: IfNotPresent
+            name: opendj
+            ports:
+            - containerPort: 1389
+              name: ldap
+            - containerPort: 4444
+              name: admin
+            - containerPort: 8989
+              name: replication
+            - containerPort: 8080
+              name: metrics
+            env:
+            - name: OPENDJ_JAVA_ARGS
+              valueFrom:
+                configMapKeyRef:
+                  name: opendj
+                  key: OPENDJ_JAVA_ARGS
+            - name: DIR_MANAGER_MON_FILE
+              valueFrom:
+                configMapKeyRef:
+                  name: opendj
+                  key: DIR_MANAGER_MON_FILE
+            - name: DIR_MANAGER_PW_FILE
+              valueFrom:
+                configMapKeyRef:
+                  name: opendj
+                  key: DIR_MANAGER_PW_FILE
+            - name: SECRET_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: opendj
+                  key: SECRET_PATH
+            - name: INSTANCE_ROOT
+              valueFrom:
+                configMapKeyRef:
+                  name: opendj
+                  key: INSTANCE_ROOT
+            # - name: BOOTSTRAP
+            #   valueFrom:
+            #     configMapKeyRef:
+            #       name: opendj
+            #       key: BOOTSTRAP
+            - name: BASE_DN
+              valueFrom:
+                configMapKeyRef:
+                  name: opendj
+                  key: BASE_DN
+            # - name: BOOTSTRAP_TYPE
+            #   valueFrom:
+            #     configMapKeyRef:
+            #       name: opendj
+            #       key: BOOTSTRAP_TYPE
+            resources:
+              limits:
+                memory: 3Gi
+                #cpu: 1
+              requests:
+                memory: 3Gi
+                cpu: 0.5
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+            volumeMounts:
+            - mountPath: /opt/opendj/data
+              name: opendj
+            - mountPath: /var/run/secrets/opendj
+              name: dj-secrets
+          imagePullSecrets:
+            - name: private-docker
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - name: opendj
+              persistentVolumeClaim:
+                claimName: opendj
+            - name: dj-secrets
+              secret: 
+                secretName: opendj-secrets
+      test: false
+      triggers:
+         - type: ConfigChange
+         - type: ImageChange
+           imageChangeParams:
+             automatic: true
+             containerNames:
+                - opendj
+             from:
+                kind: ImageStreamTag
+                name: opendj:latest

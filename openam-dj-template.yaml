@@ -1,23 +1,55 @@
 apiVersion: v1
 kind: Template
 metadata:
-  name: openam-template
+  name: openam-dj-template
   annotations:
     description: >-
-      Sample OpenAM deployment template. 
+      Sample OpenAM and OpenDJ deployment template. 
     iconClass: "icon-sso"
-    tags: "openam"
+    tags: "openam,opendj"
 objects:
+
   - kind: PersistentVolumeClaim
     apiVersion: v1
     metadata:
-      name: "${DEPLOYMENT}"
+      name: ${DEPLOYMENT}
     spec:
       accessModes:
         - "ReadWriteOnce"
       resources:
         requests:
           storage: ${STORAGE}
+
+  - kind: PersistentVolumeClaim
+    apiVersion: v1
+    metadata:
+      name: "opendj"
+    spec:
+      accessModes:
+        - "ReadWriteOnce"
+      resources:
+        requests:
+          storage: 2Gi
+  
+  - kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: opendj
+    data:
+      BACKUP_HOST: dontbackup
+      BACKUP_SCHEDULE_FULL: 2 2 * * *
+      BACKUP_SCHEDULE_INCREMENTAL: 15 * * * *
+      BASE_DN: dc=openam,dc=forgerock,dc=org
+      #BOOTSTRAP: "/opt/opendj/bootstrap/setup.sh"
+      #BOOTSTRAP_TYPE_CTS: cts
+      #BOOTSTRAP_TYPE: userstore
+      DJ_MASTER_SERVER: opendj.opendj
+      OPENDJ_JAVA_ARGS: "-server -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"
+      DIR_MANAGER_PW_FILE: /var/run/secrets/opendj/dirmanager.pw
+      DIR_MANAGER_MON_FILE: /var/run/secrets/opendj/dirmonitor.pw
+      SECRET_PATH: /var/run/secrets/opendj
+      INSTANCE_ROOT: /opt/opendj/data
+  
   - kind: Secret
     apiVersion: v1
     data:
@@ -26,12 +58,30 @@ objects:
     metadata:
       name: private-docker
     type: kubernetes.io/dockerconfigjson
+
+  - kind: Secret
+    apiVersion: v1
+    metadata:
+      name: opendj-secrets
+    type: Opaque
+    data:
+      dirmanager.pw: cGFzc3dvcmQ=
+      monitor.pw: cGFzc3dvcmQ=
+
   - kind: ImageStream
     apiVersion: v1
     metadata:
       name: ${DEPLOYMENT}
     spec:
       dockerImageRepository: ${IMAGEREPO}
+
+  - kind: ImageStream
+    apiVersion: v1
+    metadata:
+      name: opendj
+    spec:
+      dockerImageRepository: docker.io/scureq/opendj
+
   - kind: DeploymentConfig
     apiVersion: apps.openshift.io/v1
     metadata:
@@ -69,13 +119,15 @@ objects:
             resources:
               limits:
                 memory: ${MEMORY_LIMIT}
+                #cpu: 1
               requests:
                 memory: ${MEMORY_INIT}
+                cpu: 0.5
             terminationMessagePath: /dev/termination-log
             terminationMessagePolicy: File
             volumeMounts:
               - mountPath: /usr/local/tomcat/openam-configuration
-                name: volume-openam
+                name: ${DEPLOYMENT}
           imagePullSecrets:
             - name: private-docker
           dnsPolicy: ClusterFirst
@@ -84,7 +136,7 @@ objects:
           securityContext: {}
           terminationGracePeriodSeconds: 30
           volumes:
-            - name: volume-openam
+            - name: ${DEPLOYMENT}
               persistentVolumeClaim:
                 claimName: ${DEPLOYMENT}
       test: false
@@ -98,8 +150,137 @@ objects:
                 kind: ImageStreamTag
                 name: ${DEPLOYMENT}:latest
          - type: ConfigChange
+
+  # - kind: DeploymentConfig
+  #   apiVersion: apps.openshift.io/v1
+  - kind: StatefulSet
+    apiVersion: apps/v1beta1
+    metadata:
+      # labels:
+      #   app: opendj
+      name: opendj
+    spec:
+  #new
+      serviceName: opendj
+  #
+      replicas: 1
+      # selector:
+      #   app: opendj
+      #   deploymentconfig: opendj
+      strategy:
+        activeDeadlineSeconds: 21600
+        resources: {}
+        rollingParams:
+          intervalSeconds: 1
+          maxSurge: 25%
+          maxUnavailable: 25%
+          timeoutSeconds: 600
+          updatePeriodSeconds: 1
+        type: Rolling
+      template:
+        metadata:
+          labels:
+            app: opendj
+            deploymentconfig: opendj
+        spec:
+          containers:
+          #- image: opendj
+          - image: docker.io/scureq/opendj
+            imagePullPolicy: IfNotPresent
+            name: opendj
+            ports:
+            - containerPort: 1389
+              name: ldap
+            - containerPort: 4444
+              name: admin
+            - containerPort: 8989
+              name: replication
+            - containerPort: 8080
+              name: metrics
+            env:
+            - name: OPENDJ_JAVA_ARGS
+              valueFrom:
+                configMapKeyRef:
+                  name: opendj
+                  key: OPENDJ_JAVA_ARGS
+            - name: DIR_MANAGER_MON_FILE
+              valueFrom:
+                configMapKeyRef:
+                  name: opendj
+                  key: DIR_MANAGER_MON_FILE
+            - name: DIR_MANAGER_PW_FILE
+              valueFrom:
+                configMapKeyRef:
+                  name: opendj
+                  key: DIR_MANAGER_PW_FILE
+            - name: SECRET_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: opendj
+                  key: SECRET_PATH
+            - name: INSTANCE_ROOT
+              valueFrom:
+                configMapKeyRef:
+                  name: opendj
+                  key: INSTANCE_ROOT
+            # - name: BOOTSTRAP
+            #   valueFrom:
+            #     configMapKeyRef:
+            #       name: opendj
+            #       key: BOOTSTRAP
+            - name: BASE_DN
+              valueFrom:
+                configMapKeyRef:
+                  name: opendj
+                  key: BASE_DN
+            # - name: BOOTSTRAP_TYPE
+            #   valueFrom:
+            #     configMapKeyRef:
+            #       name: opendj
+            #       key: BOOTSTRAP_TYPE
+            resources:
+              limits:
+                memory: 3Gi
+                #cpu: 1
+              requests:
+                memory: ${DJ_MEMORY_INIT}
+                cpu: 0.5
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+            volumeMounts:
+            - mountPath: /opt/opendj/data
+              name: opendj
+            - mountPath: /var/run/secrets/opendj
+              name: dj-secrets
+          imagePullSecrets:
+            - name: private-docker
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - name: opendj
+              persistentVolumeClaim:
+                claimName: opendj
+            - name: dj-secrets
+              secret: 
+                secretName: opendj-secrets
+      test: false
+      triggers:
+         - type: ConfigChange
+         - type: ImageChange
+           imageChangeParams:
+             automatic: true
+             containerNames:
+                - opendj
+             from:
+                kind: ImageStreamTag
+                name: opendj:latest
+
   - kind: Service
     apiVersion: v1
+    name: ${DEPLOYMENT}
     metadata:
       labels:
         app: ${DEPLOYMENT}
@@ -114,6 +295,25 @@ objects:
         deploymentconfig: ${DEPLOYMENT}
       sessionAffinity: None
       type: ClusterIP
+
+  - kind: Service
+    apiVersion: v1
+    name: opendj
+    metadata:
+      labels:
+        app: opendj
+      name: opendj
+    spec:
+      ports:
+        - name: 1389-tcp
+          port: 1389
+          protocol: TCP
+          targetPort: 1389
+      selector:
+        deploymentconfig: opendj
+      sessionAffinity: None
+      type: ClusterIP
+
   - kind: Route
     apiVersion: v1
     metadata:
@@ -145,7 +345,10 @@ parameters:
   - name: STORAGE
     description: Persistant Volume Claim size
     value: 2Gi
+  - name: DJ_MEMORY_INIT
+    description: Initial memory allocated to OpenDJ
+    value: 3gi
   - name: DOCKER_CREDS
     description: Docker registry Base64 encoded configfile.
 labels:
-  template: openam-eval
+  template: openam-dj-eval
