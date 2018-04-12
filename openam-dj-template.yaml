@@ -309,6 +309,10 @@ objects:
           port: 1389
           protocol: TCP
           targetPort: 1389
+        - name: 4444-tcp
+          port: 4444
+          protocol: TCP
+          targetPort: 4444
       selector:
         deploymentconfig: opendj
       sessionAffinity: None

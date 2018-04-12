@@ -1,8 +1,8 @@
-# ForgeRock Access Management on OpenShift
+# ForgeRock Access Management + ForgeRock Directory Services on OpenShift
 
 This examples assumes OpenShift Online 3 is used. 
 
-Manifests in `manifests` directory are here only for reference. Deployment can be rolled out using `openam-template.yaml` Template. 
+Deployment can be rolled out using `openam-dj-template.yaml` Template. 
 
 
 ### Requirements
@@ -23,7 +23,7 @@ $ oc new-project am-playground
 
 ##### List available parameters
 ```sh
-$ oc process --parameters -f openam-template.yaml
+$ oc process --parameters -f openam-dj-template.yaml
 ```
 Values in `Values` column are default when parameter is not specified. In our example the only required parameter is `IMAGEREPO`.
 
@@ -71,7 +71,7 @@ $ export DOCKER_CREDS=`cat ~/.docker/config.json | base64`
 ##### Run using parameters
 
 ```sh
-$ oc process -f openam-template.yaml -p DEPLOYMENT=demo -p DOCKER_CREDS=$DOCKER_CREDS -p IMAGEREPO=docker.io/mydockerid/openam-eval | oc create -f -
+$ oc process -f openam-dj-template.yaml -p DEPLOYMENT=demo -p DOCKER_CREDS=$DOCKER_CREDS -p IMAGEREPO=docker.io/mydockerid/openam-eval | oc create -f -
 ```
 
 ##### Check deployment status
@@ -82,23 +82,28 @@ $ oc get all
 
 After all has been successfully created you should see output similar to this:
 ```sh
-NAME                DOCKER REPO                     TAGS           UPDATED
-imagestreams/demo   docker.io/mydockerid/openam-eval   latest,5.5.1   2 hours ago
+NAME                  DOCKER REPO                     TAGS           UPDATED
+imagestreams/demo     docker.io/yourdockerid/openam-eval   latest,5.5.1   2 hours ago
+imagestreams/opendj   docker.io/yourdockerid/opendj         latest         2 hours ago
 
 NAME                     REVISION   DESIRED   CURRENT   TRIGGERED BY
 deploymentconfigs/demo   1          1         1         config,image(demo:latest)
 
-NAME          HOST/PORT                                           PATH      SERVICES   PORT       TERMINATION   WILDCARD
-routes/demo   demo-am-test.sddd.pro-eu-west-1.openshiftapps.com   /openam   demo       8080-tcp                 None
+NAME          HOST/PORT                                        PATH      SERVICES   PORT       TERMINATION   WILDCARD
+routes/demo   demo-test.e4ff.pro-eu-west-1.openshiftapps.com   /openam   demo       8080-tcp                 None
+
+NAME                  DESIRED   CURRENT   AGE
+statefulsets/opendj   1         1         1h
 
 NAME                     REVISION   DESIRED   CURRENT   TRIGGERED BY
 deploymentconfigs/demo   1          1         1         config,image(demo:latest)
 
-NAME                DOCKER REPO                     TAGS           UPDATED
-imagestreams/demo   docker.io/mydockerid/openam-eval   5.5.1,latest   2 hours ago
+NAME          HOST/PORT                                        PATH      SERVICES   PORT       TERMINATION   WILDCARD
+routes/demo   demo-test.e4ff.pro-eu-west-1.openshiftapps.com   /openam   demo       8080-tcp                 None
 
 NAME              READY     STATUS    RESTARTS   AGE
-po/demo-1-55nr4   1/1       Running   0          2h
+po/demo-1-nrtt7   1/1       Running   0          2h
+po/opendj-0       1/1       Running   0          1h
 
 NAME        DESIRED   CURRENT   READY     AGE
 rc/demo-1   1         1         1         2h
@@ -107,5 +112,5 @@ rc/demo-1   1         1         1         2h
 
 ##### Delete what you deployed
 ```sh
-$ oc process -f openam-template.yaml -p DEPLOYMENT=demo -p IMAGEREPO=docker.io/mydockerid/myrepo | oc delete -f -
+$ oc process -f openam-dj-template.yaml -p DEPLOYMENT=demo -p IMAGEREPO=docker.io/mydockerid/myrepo | oc delete -f -
 ```
