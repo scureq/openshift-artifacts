@@ -3,10 +3,12 @@
 This examples assumes OpenShift Online 3 is used. 
 
 Deployment can be rolled out using `openam-dj-template.yaml` Template. 
+There's also `dj-statefulset.yaml` manifest which allows to deploy only Directory Services as a Stateful Set. Please bear in mind Stateful Set is still in technology preview stage on OpenShift Online.
 
 
 ### Requirements
 * OpenShift Online account
+* Most likely Pro subscription as multiple pods of certail memory/cpu/storage requirements need to be deployed. 
 * OpenShift command line client (from RedHat) installed called "oc". Use the latest version. You can get it from [OpenShift GitHub](https://github.com/openshift/origin/releases).
 
 
@@ -28,6 +30,7 @@ $ oc process --parameters -f openam-dj-template.yaml
 Values in `Values` column are default when parameter is not specified. In our example the only required parameter is `IMAGEREPO`.
 
 ###### Result
+The output should be similar to this:
 
 ```sh
 NAME                DESCRIPTION                                                        GENERATOR           VALUE
@@ -113,4 +116,23 @@ rc/demo-1   1         1         1         2h
 ##### Delete what you deployed
 ```sh
 $ oc process -f openam-dj-template.yaml -p DEPLOYMENT=demo -p IMAGEREPO=docker.io/mydockerid/myrepo | oc delete -f -
+```
+
+#### Deploy Directory Services as Stateful Set only
+To deploy/delete Directory Services as Stateful Set you can proceed as follows:
+Use `dj-statefulset.yaml` manifest instead. It doesn't take any parameters deploying DS with:
+- with initial and maximum memory size of 3Gi
+- CPU = 1
+
+NOTE: it requires Volume called "opendj" presence.
+
+To create:
+
+```sh
+$ oc deploy -f dj-statefulset.yaml
+```
+
+To remove:
+```sh
+$ oc delete -f dj-statefulset.yaml
 ```
