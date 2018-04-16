@@ -1,0 +1,109 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: openam-template
+  annotations:
+    description: >-
+      Sample OpenAM  deployment template. 
+    iconClass: "icon-sso"
+    tags: "openam,opendj"
+objects:
+
+  - kind: ImageStream
+    apiVersion: v1
+    metadata:
+      name: ${DEPLOYMENT}
+    spec:
+      dockerImageRepository: ${IMAGEREPO}
+
+  - kind: DeploymentConfig
+    apiVersion: apps.openshift.io/v1
+    metadata:
+      labels:
+        app: ${DEPLOYMENT}
+      name: ${DEPLOYMENT}
+    spec:
+      replicas: 1
+      selector:
+        app: ${DEPLOYMENT}
+        deploymentconfig: ${DEPLOYMENT}
+      strategy:
+        activeDeadlineSeconds: 21600
+        resources: {}
+        rollingParams:
+          intervalSeconds: 1
+          maxSurge: 25%
+          maxUnavailable: 25%
+          timeoutSeconds: 600
+          updatePeriodSeconds: 1
+        type: Rolling
+      template:
+        metadata:
+          labels:
+            app: ${DEPLOYMENT}
+            deploymentconfig: ${DEPLOYMENT}
+        spec:
+          containers:
+          - image: ${DEPLOYMENT}
+            imagePullPolicy: IfNotPresent
+            name: ${DEPLOYMENT}
+            ports:
+              - containerPort: 8080
+                protocol: TCP
+            resources:
+              limits:
+                memory: ${MEMORY_LIMIT}
+                cpu: 2
+              requests:
+                memory: ${MEMORY_INIT}
+                cpu: 1
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+            volumeMounts:
+              - mountPath: /usr/local/tomcat/openam-configuration
+                name: ${DEPLOYMENT}
+          imagePullSecrets:
+            - name: private-docker
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - name: ${DEPLOYMENT}
+              persistentVolumeClaim:
+                claimName: ${DEPLOYMENT}
+      test: false
+      triggers:
+         - type: ImageChange
+           imageChangeParams:
+             automatic: true
+             containerNames:
+                - ${DEPLOYMENT}
+             from:
+                kind: ImageStreamTag
+                name: ${DEPLOYMENT}:latest
+         - type: ConfigChange  
+parameters:
+  - name: DEPLOYMENT
+    description: Deployment name
+    value: openam
+  - name: IMAGEREPO
+    description: Pointer to Docker Image repository eg. docker.io/user/repository
+    required: true
+  - name: MEMORY_INIT
+    description: Initial memory allocated to containers
+    value: 2Gi
+  - name: MEMORY_LIMIT
+    description: Maximum amount of memory container can consume
+    value: 3Gi
+  - name: STORAGE
+    description: Persistant Volume Claim size
+    value: 2Gi
+  - name: DJ_MEMORY_INIT
+    description: Initial memory allocated to OpenDJ
+    value: 3gi
+  - name: DOCKER_CREDS
+    description: Docker registry Base64 encoded configfile.
+labels:
+  template: openam
