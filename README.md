@@ -136,3 +136,11 @@ To remove:
 ```sh
 $ oc delete -f dj-statefulset.yaml
 ```
+
+###### Useful stuff
+
+If you want to connecr from your local LDAP client to DJ you need to forward port 4444:
+
+```sh
+$ oc port-forward opendj-0 1389:1389
+```
